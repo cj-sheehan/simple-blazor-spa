@@ -1,0 +1,77 @@
+﻿@page "/addName"
+@using NameApi.Models
+@inject HttpClient Http
+
+<div class="container">
+
+    <div class="card m-4">
+
+        <div class="card-header">
+            <h1 class="card-title">Add Name</h1>
+        </div>
+
+        <div class="card-body">
+
+            @if (_createdModel is null)
+            {
+                <EditForm Model="_model" OnSubmit="SubmitForm">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-group">
+                        <label for="@nameof(_model.Name)">Name</label>
+                        <InputText @bind-Value="_model.Name" id="@nameof(_model.Name)" class="form-control" aria-describedby="@($"{nameof(_model.Name)}-error")" />
+                        <ValidationMessage For="() => _model.Name" id="@($"{nameof(_model.Name)}-error")" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"> Submit </button>
+                </EditForm>
+            }
+            else
+            {
+                @if (_createdLocation is null == false)
+                {
+                    <div>
+                        <span> HTTP Location Header: <a href="@_createdLocation">@_createdLocation</a> </span>
+                    </div>
+                }
+
+                <div>
+                    <span> Created content: </span>
+                    <ul>
+                        <li> @_createdModel.Id </li>
+                        <li> @_createdModel.Name  </li>
+                        <li> @_createdModel.DateCreated.ToLocalTime().ToString() </li>
+                    </ul>
+                </div>
+
+                <button @onclick="ResetForm" class="btn btn-primary">Add Another Name</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private EditContext _editContext;
+    private NameCreateRequestModel _model = new NameCreateRequestModel();
+
+    private Uri _createdLocation;
+    private NameResponseModel _createdModel;
+
+    private async Task SubmitForm(EditContext editContext)
+    {
+        bool formIsValid = editContext.Validate();
+        if (formIsValid)
+        {
+            var response = await Http.PostAsJsonAsync("api/name", editContext.Model as NameCreateRequestModel);
+            _createdLocation = response.Headers.Location;
+            _createdModel = await response.Content.ReadFromJsonAsync<NameResponseModel>();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _createdModel = null;
+        _createdLocation = null;
+        _model = new NameCreateRequestModel();
+    }
+}
